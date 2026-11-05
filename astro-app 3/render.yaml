@@ -1,0 +1,13 @@
+# Render Blueprint: Render reads this automatically when you create the service from the repo.
+services:
+  - type: web
+    name: astro-decisions
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: OPENROUTER_API_KEY
+        sync: false   # you paste the key in Render's dashboard; it is never stored in the repo
+      - key: NODE_VERSION
+        value: "20"

@@ -1,0 +1,23 @@
+{
+  "name": "astro-decisions",
+  "version": "0.1.0",
+  "description": "AI decision guide: Western chart, Saju, astrocartography and tarot",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "mock": "node server.js --mock",
+    "cost": "node cost-calculator.js",
+    "check": "node check.js"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "astronomy-engine": "^2.1.19",
+    "lunar-javascript": "^1.7.7",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  }
+}
