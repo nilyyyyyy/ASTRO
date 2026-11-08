@@ -91,6 +91,13 @@ function mockLLM(messages) {
   const isReading = messages[0].content.includes('three lenses');
   const isHint = messages[0].content.includes('is stuck on one question');
   const isChat = messages[0].content.includes('asks you questions about them');
+  if (messages[0].content.includes('You are the tarot reader')) {
+    const pos = [...messages[1].content.matchAll(/^(\w[\w ]*): (.+?) —/gm)].map(m => m[1]).filter(x => x !== 'Question' && x !== 'Chart');
+    const text = JSON.stringify({ support: false, summary: '[Mock] A spread about letting go of what you have outgrown so something new can arrive.',
+      cards: pos.map(p => ({ position: p, reading: `[Mock] In the ${p} position, this card asks you to look honestly at where you are and what you really want.` })),
+      reflect: '[Mock] What would you do this week if you trusted yourself completely?' });
+    return { text, usage: { model: 'mock', input: Math.ceil(messages.map(m => m.content).join('').length / 4), output: Math.ceil(text.length / 4), cost: null } };
+  }
   if (isChat) {
     const q = messages[messages.length - 1].content;
     const text = `[Mock] Good question about "${q.slice(0, 60)}". Your Day Master is Yin Water: gentle, adaptive, like rain soaking into soil. With five Earth elements around it, you're a deep thinker who needs time to absorb before acting. In your Western chart, Libra rising gives you that diplomatic first impression.`;
