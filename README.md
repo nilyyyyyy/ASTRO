@@ -1,9 +1,10 @@
 # Trine (working name) · *Decisions, decisions…*
 
-Two views from one birth input:
+Three tools from one birth input:
 
 - **My chart:** chart wheel, every placement explained, saju pillars and Day Master, this year's energy, an astrocartography map with a city checker, and a chat to ask questions about your chart.
-- **Decide:** bring a decision and get three lenses:
+- **Cards:** a quick one- or three-card tarot pull on any question.
+- **Decide:** bring a decision, reflect if you want to (optional), draw cards, and get one reading from three lenses:
 
 - **When:** Korean Saju (four pillars, Day Master, element balance, current year)
 - **Where:** astrocartography (planet lines near the places involved)
@@ -29,16 +30,16 @@ One OpenRouter key runs everything.
 
 ## Deploy on Render (free)
 
-1. The repo must keep the folder structure: `index.html`, `app.js`, `chart.js`, `reflect.js` and `tarot.js` inside `public/`. Don't commit `node_modules` or `.env`.
+1. The repo must keep the folder structure: the whole `public/` folder, including `public/vendor/` and `public/engine.js`. Don't commit `node_modules` or `.env`.
 2. On Render: **New → Web Service**, connect the repo. `render.yaml` sets the build command (`npm install`) and start command (`npm start`). If you set them by hand, use exactly those.
 3. Under **Environment**, add `OPENROUTER_API_KEY` with your key.
 4. The free plan sleeps after 15 minutes without visitors; the first visit after that takes about a minute.
 
 If a deploy fails, the log starts with a **MISSING FILES** list and tells you what to fix.
 
-## The reflection screen (step 3)
+## Decide: the reflect step
 
-A small game: answering a question, adding a question of your own, or dropping a thought into the **thought jar** lights a star. Seven stars is 100% clarity; three unlock the tarot cards. Any question, including the user's own, has an **Ask the stars** button for a chart-based hint. Answers, own questions, hints and notes all feed into the final reading.
+Optional. Questions only load when you tap "Suggest questions", each one opens when you tap it, and "Draw the cards" is always one tap away. You can add your own questions (each gets an "Ask the stars" hint) and notes. Everything written there goes into the reading.
 
 ## AI calls per session
 
@@ -58,11 +59,12 @@ A small game: answering a question, adding a question of your own, or dropping a
 
 | File | Role |
 |---|---|
-| `engine.js` | All astrology maths: Western chart (whole-sign houses), Saju pillars, astrocartography lines. No AI. |
-| `public/` | The page (`index.html`, `app.js`), My chart frame (`chart.js`), reflection game (`reflect.js`), tarot deck (`tarot.js`) |
+| `public/engine.js` | All astrology maths: Western chart (whole-sign houses), Saju pillars, astrocartography lines. No AI. |
+| `public/` | The page (`index.html`, `app.js`), My chart (`chart.js`), the reflect step (`reflect.js`), tarot deck (`tarot.js`), libraries (`vendor/`) |
+| `handlers.js` | The AI endpoints |
 | `prompts.js` | All AI prompts and the Jev questions |
 | `ai.js` | OpenRouter chat + Jev decisions clients, mock responses |
-| `server.js` | Serves the app and `/api/questions`, `/api/hint`, `/api/chat`, `/api/reading` |
+| `server.js` | Serves `public/` and the AI endpoints in `handlers.js`: `/api/questions`, `/api/hint`, `/api/chat`, `/api/tarot`, `/api/reading` |
 | `config.js` | Reads `.env` |
 | `check.js` | Pre-flight check for key and model IDs |
 | `cost-calculator.js` | Session cost from live prices |

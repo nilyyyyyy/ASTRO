@@ -60,6 +60,23 @@ ${profileSummary(profile)}` },
   ];
 }
 
+// Cards tool: a quick tarot pull on any question, lightly personalised with the chart.
+function tarotMessages(profile, question, cards) {
+  const spread = cards.map(c => `${c.position}: ${c.name}${c.reversed ? ' (reversed)' : ''} — ${c.reversed ? c.reversed_kw : c.upright}`).join('\n');
+  const p = profile.planets || [], sun = p.find(x => x.name === 'Sun'), moon = p.find(x => x.name === 'Moon');
+  return [
+    { role: 'system', content:
+`You are the tarot reader in a reflective astrology app. Read the cards the user drew, in plain, warm, specific language.
+Treat tarot as a mirror for reflection, never as a certain prediction. You may add one light touch from their chart if it genuinely fits.
+${SAFETY}
+Reply with JSON only:
+{"support": false, "summary": "one or two sentences that capture the whole spread", "cards": [{"position": "...", "reading": "2 sentences on this card in this position"}], "reflect": "one question for them to sit with"}
+or {"support": true, "message": "..."}` },
+    { role: 'user', content: `Question: ${question || '(no question, a general reading for today)'}\n\nCards:\n${spread}\n\n` +
+      `Chart: Sun ${sun ? sun.sign : '?'}, Moon ${moon ? moon.sign : '?'}, Rising ${profile.ascendant}, Day Master ${profile.saju ? profile.saju.dayMaster : '?'}` }
+  ];
+}
+
 function readingMessages(profile, decision, kind, answers, cards, notes = []) {
   const qa = answers.map(a => `Q${a.own ? ' (their own question)' : ''}: ${a.q}\nA: ${a.a}${a.hint ? `\n(Astro hint they received: ${a.hint})` : ''}`).join('\n\n') +
     (notes.length ? `\n\nThoughts they noted down:\n- ${notes.join('\n- ')}` : '');
@@ -102,4 +119,4 @@ function jevRequest(decision, model = 'typesafe/jev-1.14') {
   };
 }
 
-module.exports = { profileSummary, questionsMessages, hintMessages, chatMessages, readingMessages, jevRequest };
+module.exports = { profileSummary, questionsMessages, hintMessages, chatMessages, tarotMessages, readingMessages, jevRequest };
