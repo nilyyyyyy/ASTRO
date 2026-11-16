@@ -1,8 +1,9 @@
 # Trine (working name) · *Decisions, decisions…*
 
-Three tools from one birth input:
+Standalone tools from one birth input (each works on its own; Decide combines them):
 
 - **My chart:** chart wheel, every placement explained, saju pillars and Day Master, this year's energy, an astrocartography map with a city checker, and a chat to ask questions about your chart.
+- **Human Design:** bodygraph, Type, Strategy, Authority, Profile, centers, channels and gates, each explained. React to any part (so me / not me / not sure, plus notes) and run two-week experiments with daily check-ins. Reactions and experiments stay on your device and are shared with the AI so answers use them.
 - **Cards:** a quick one- or three-card tarot pull on any question.
 - **Decide:** bring a decision, reflect if you want to (optional), draw cards, and get one reading from three lenses:
 
@@ -78,6 +79,5 @@ Optional. Questions only load when you tap "Suggest questions", each one opens w
 
 ## Known limits
 
-- North Node is the mean node (CHANI uses the true node, about 1° different).
 - Profile (name + birth data) is remembered on the user's own device only ("Remember me"); no server accounts or payments yet.
 - To rename the app, change the `<title>`, `#brandName` and `#brandTag` in `public/index.html`.

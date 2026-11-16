@@ -23,7 +23,11 @@ const ChartView = (() => {
   const GEN = { Wood: 'Fire', Fire: 'Earth', Earth: 'Metal', Metal: 'Water', Water: 'Wood' };   // generating cycle
   const CTRL = { Wood: 'Earth', Earth: 'Water', Water: 'Fire', Fire: 'Metal', Metal: 'Wood' };  // controlling cycle
   const ANGLE = { ASC: 'in how you come across', DSC: 'in relationships and partners', MC: 'in career and public image', IC: 'in home and private life' };
-  const STARTERS = ['What does my Day Master mean for me?', 'Why is my element balance like this?', 'What do my Sun, Moon and Rising say together?', 'Where in the world do I look my best?'];
+  const LENS = {
+    western: { title: 'Ask about your birth chart', starters: () => ['What do my Sun, Moon and Rising say together?', 'What does my Venus say about love?', 'What is my North Node asking of me?'] },
+    saju: { title: 'Ask about your saju', starters: () => ['What does my Day Master mean for me?', 'Why is my element balance like this?', 'What does this year mean for me?'] },
+    hd: { title: 'Ask about your Human Design', starters: () => { const h = HDView.get(); return [`What does ${h.authority} authority mean day to day?`, `How do I live as a ${h.type} at work?`, `What does my ${h.profile} profile mean?`]; } },
+    map: { title: 'Ask about your map', starters: () => ['Where in the world do I look my best?', 'Where would my career do best?', 'Which places should I be careful with?'] } };
 
   let places = [], chat = [], busy = false;
 
@@ -78,7 +82,7 @@ const ChartView = (() => {
     const strong = Object.keys(bal).filter(k => bal[k] >= 3), missing = Object.keys(bal).filter(k => bal[k] === 0);
 
     $('chartView').innerHTML = `
-      <div class="panel cv-hero">
+      <div class="panel cv-hero cv-pane" data-t="western">
         <div class="cv-hero-text">
           <h2>${state.name ? esc(state.name) + '\'s sky' : 'Your sky'}</h2>
           <p class="sub" style="margin:0 0 12px">Born ${esc(new Date($('date').value + 'T12:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }))} at ${esc($('time').value)} in ${esc(state.birthPlace.label)}</p>
@@ -89,8 +93,6 @@ const ChartView = (() => {
         <div class="cv-wheel">${wheel(c)}</div>
       </div>
 
-      <div class="tabs2" id="cvTabs"><button data-t="western" class="on">Birth chart</button><button data-t="saju">Saju</button><button data-t="map">Where on Earth</button></div>
-
       <div class="panel cv-pane" data-t="western">
         <h2>Birth chart</h2>
         <table class="cv-table"><thead><tr><th></th><th>Placement</th><th>House</th><th>What it says</th></tr></thead><tbody>
@@ -99,11 +101,12 @@ const ChartView = (() => {
           ${c.planets.map(p => `<tr><td class="g" style="color:${COLORS[p.name] || 'var(--muted)'}">${GLYPH[p.name]}</td><td><b>${p.name}</b> ${f(p)}</td><td>${p.house}</td>
             <td>${cap(PLANET[p.name])}: ${SIGN[p.sign]}, showing up in ${HOUSE[p.house]}.</td></tr>`).join('')}
         </tbody></table>
-        <p class="note">Tropical zodiac, whole-sign houses, mean lunar node.</p>
+        <p class="note">Tropical zodiac, whole-sign houses, true lunar node.</p>
       </div>
 
       <div class="panel cv-pane hidden" data-t="saju">
         <h2>Saju: your four pillars</h2>
+        <p class="sub">Korean saju reads your birth year, month, day and hour as four pairs of elements. The day pillar is you.</p>
         <div class="cv-pillars">${s.pillars.map(p => `<div class="cv-pillar ${p.pillar === 'Day' ? 'me' : ''}">
           <small>${p.pillar}${p.pillar === 'Day' ? ' (you)' : ''}</small><div class="hz">${p.hanja}</div>
           <div class="el" style="color:${ELEMENT_COLORS[p.stemElement]}">${p.polarity} ${p.stemElement}</div><div class="el" style="color:${ELEMENT_COLORS[p.branchElement]}">${p.animal}, ${p.branchElement}</div>
@@ -117,7 +120,7 @@ const ChartView = (() => {
       </div>
 
       <div class="panel cv-pane hidden" data-t="map">
-        <h2>Where on Earth</h2>
+        <h2>Your map</h2>
         <p class="sub">Lines show where each planet was rising, setting, overhead or underfoot when you were born. The thicker pink Venus lines are where you tend to look and feel your best.</p>
         <svg id="chartMap" viewBox="0 0 1000 500" class="map"></svg>
         <div class="legend">${Object.keys(COLORS).map(p => `<span><span class="sw" style="background:${COLORS[p]}"></span>${p}</span>`).join('')}<span>Solid: rising or overhead. Dashed: setting. Dotted: underfoot.</span></div>
@@ -125,29 +128,34 @@ const ChartView = (() => {
         <div id="cvCities"></div>
       </div>
 
+      <div class="panel cv-pane hidden" data-t="hd" id="hdPane"></div>
+
       <div class="panel cv-chat" id="cvChat">
-        <h2>Ask about your chart</h2>
-        <div id="cvLog" class="log"><div class="msg bot">Ask me anything about your chart, your saju or your map. I'll answer from your actual placements.</div></div>
-        <div class="chips" id="cvStarters">${STARTERS.map(q => `<button class="chip cv-starter">${esc(q)}</button>`).join('')}</div>
+        <h2 id="cvChatTitle">Ask about your chart</h2>
+        <div id="cvLog" class="log"><div class="msg bot">Ask me anything about your birth chart, saju, Human Design or map. I'll answer from your actual placements.</div></div>
+        <div class="chips" id="cvStarters"></div>
         <div class="row"><input id="cvInput" placeholder="Type your question" maxlength="500" aria-label="Your question"><button class="btn" id="cvSend">Ask</button></div>
       </div>
-      <div class="panel" style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap"><div><h3>Facing a decision?</h3><p class="note" style="margin:0">Saju for when, your map for where, tarot for now.</p></div><div class="btnrow" style="margin:0"><button class="ghost" id="cvToCards">Pull cards</button><button class="btn" id="cvToDecide">Start a decision</button></div></div>`;
+      <div class="panel" style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap"><div><h3>Facing a decision?</h3><p class="note" style="margin:0">Saju for when, your map for where, tarot for now, and your Human Design for how.</p></div><div class="btnrow" style="margin:0"><button class="ghost" id="cvToCards">Pull cards</button><button class="btn" id="cvToDecide">Start a decision</button></div></div>`;
 
-    $('cvTabs').querySelectorAll('button').forEach(b => b.onclick = () => tab(b.dataset.t));
     $('cvToChat').onclick = () => { $('cvChat').scrollIntoView({ behavior: 'smooth' }); $('cvInput').focus(); };
     $('cvToDecide').onclick = () => view('decide');
     $('cvToCards').onclick = () => view('cards');
     attachSearch('cvCityQ', 'cvCityResults', (p, input) => { places.unshift(p); input.value = ''; renderCities(); });
     $('cvSend').onclick = send;
     $('cvInput').onkeydown = e => { if (e.key === 'Enter') send(); };
-    $('cvStarters').querySelectorAll('.cv-starter').forEach(b => b.onclick = () => { $('cvInput').value = b.textContent; send(); });
     places = [state.birthPlace]; chat = [];
+    HDView.render();
     renderCities();
   }
 
-  function tab(t) {
-    $('cvTabs').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+  // Show one lens on its own (Birth chart, Saju, Human Design or Map), with chat starters for that lens
+  function show(t) {
     document.querySelectorAll('.cv-pane').forEach(p => p.classList.toggle('hidden', p.dataset.t !== t));
+    $('cvChatTitle').textContent = LENS[t].title;
+    $('cvStarters').innerHTML = LENS[t].starters().map(q => `<button class="chip cv-starter">${esc(q)}</button>`).join('');
+    $('cvStarters').classList.remove('hidden');
+    $('cvStarters').querySelectorAll('.cv-starter').forEach(b => b.onclick = () => { $('cvInput').value = b.textContent; send(); });
     if (t === 'map') renderMap('chartMap', places);
   }
 
@@ -189,5 +197,5 @@ const ChartView = (() => {
   }
 
   const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
-  return { render };
+  return { render, show };
 })();

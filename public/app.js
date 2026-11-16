@@ -1,4 +1,4 @@
-// Trine front end. Birth data once, then three tools: My chart (chart.js), Cards, and Decide
+// Trine front end. Birth data once, then standalone tools: Birth chart, Saju, Human Design (hd.js), Map, Cards, and Decide
 // (decision -> optional reflect in reflect.js -> cards -> reading).
 // All astrology is calculated in the browser; only text goes to the AI endpoints.
 const $ = id => document.getElementById(id);
@@ -46,6 +46,7 @@ function profilePayload(places = state.places) {
     ascendant: `${c.ascendant.sign} ${c.ascendant.degree}°`, midheaven: `${c.midheaven.sign} ${c.midheaven.degree}°`,
     planets: c.planets.map(p => ({ name: p.name, sign: p.sign, degree: p.degree, house: p.house })),
     saju: state.saju,
+    hd: HDView.summary(),
     currentYearPillar: (() => { const y = AstroEngine.saju(now.getFullYear(), now.getMonth() + 1, now.getDate(), 12, 0).pillars[0]; return `${y.hanja} ${y.polarity} ${y.stemElement} ${y.animal}`; })(),
     places: places.map(p => ({ label: p.label, lines: AstroEngine.linesNearCity(c, p.lat, p.lon, 700) }))
   };
@@ -67,7 +68,7 @@ $('calc').onclick = async () => {
     saveProfile();
     $('status1').textContent = '';
     ChartView.render();
-    view('chart');
+    view('western');
   } catch (e) { $('status1').textContent = e.message; }
 };
 
@@ -89,18 +90,22 @@ function loadProfile() {
   } catch (e) { return false; }
 }
 
-// ---------- views ----------
+// ---------- views: each lens and tool stands on its own ----------
 const VIEWS = { chart: 'chartView', cards: 'cardsView', decide: 'decideView' };
+const LENSES = ['western', 'saju', 'hd', 'map'];
 function view(name) {
+  if (name === 'chart') name = 'western';
   $('birth').classList.add('hidden'); $('support').classList.add('hidden');
   $('nav').classList.remove('hidden');
-  Object.entries(VIEWS).forEach(([k, id]) => $(id).classList.toggle('hidden', k !== name));
+  const container = LENSES.includes(name) ? 'chart' : name;
+  Object.entries(VIEWS).forEach(([k, id]) => $(id).classList.toggle('hidden', k !== container));
+  if (LENSES.includes(name)) ChartView.show(name);
   document.querySelectorAll('#nav [data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === name));
   if (name === 'decide') step(state.decideStep || 2);
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 document.querySelectorAll('#nav [data-v]').forEach(b => b.onclick = () => view(b.dataset.v));
-document.querySelectorAll('[data-go="chart"]').forEach(b => b.onclick = () => view('chart'));
+document.querySelectorAll('[data-go="chart"]').forEach(b => b.onclick = () => view('western'));
 document.querySelectorAll('[data-to]').forEach(b => b.onclick = () => step(+b.dataset.to));
 $('editBirth').onclick = () => {
   state.decideStep = 0;
