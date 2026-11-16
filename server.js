@@ -10,7 +10,7 @@ const PUBLIC = path.join(__dirname, 'public');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png' };
 
 // Startup check: report missing files clearly instead of crashing later.
-const REQUIRED = ['index.html', 'app.js', 'chart.js', 'reflect.js', 'tarot.js', 'engine.js',
+const REQUIRED = ['index.html', 'app.js', 'chart.js', 'hd.js', 'reflect.js', 'tarot.js', 'engine.js',
   'vendor/astronomy.js', 'vendor/lunar.js', 'vendor/topojson.js', 'vendor/land.json'];
 const missing = REQUIRED.filter(f => !fs.existsSync(path.join(PUBLIC, f)));
 if (missing.length) console.error('\nMISSING FILES in public/:\n  ' + missing.join('\n  ') + '\n-> Upload the whole public folder, including public/vendor.\n');

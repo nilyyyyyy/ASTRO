@@ -59,9 +59,8 @@
       const c = bodyCoords(b, time);
       return { name: b, ...signOf(c.lon), house: house(c.lon), ra: c.ra, dec: c.dec };
     });
-    // Mean lunar node
-    const T = time.tt / 36525;
-    const nn = norm(125.0445479 - 1934.1362891 * T + 0.0020754 * T * T);
+    // True (osculating) lunar node, as used by CHANI and Human Design
+    const nn = trueNode(time);
     planets.push({ name: 'North Node', ...signOf(nn), house: house(nn) });
     planets.push({ name: 'South Node', ...signOf(nn + 180), house: house(nn + 180) });
 
@@ -138,6 +137,104 @@
     return out.sort((a, b) => a.km - b.km);
   }
 
-  const api = { SIGNS, localToUTC, westernChart, saju, cartoLines, linesNearCity };
+
+  // True lunar node: from the Moon's instantaneous orbit plane (h = r × v) in the ecliptic of date.
+  function trueNode(time) {
+    const dt = 1 / 1440; // one minute, in days
+    const rot = A.Rotation_EQJ_ECT(time);
+    const r = A.RotateVector(rot, A.GeoMoon(time));
+    const a = A.RotateVector(rot, A.GeoMoon(time.AddDays(-dt))), b = A.RotateVector(rot, A.GeoMoon(time.AddDays(dt)));
+    const v = { x: (b.x - a.x) / (2 * dt), y: (b.y - a.y) / (2 * dt), z: (b.z - a.z) / (2 * dt) };
+    const hx = r.y * v.z - r.z * v.y, hy = r.z * v.x - r.x * v.z;
+    return norm(Math.atan2(hx, -hy) * DEG);
+  }
+
+  // ---- Human Design: gates, centers, channels, type, authority, profile ----
+  const HD_ORDER = [41,19,13,49,30,55,37,63,22,36,25,17,21,51,42,3,27,24,2,23,8,20,16,35,45,12,15,52,39,53,62,56,31,33,7,4,29,59,40,64,47,6,46,18,48,57,32,50,28,44,1,43,14,34,9,5,26,11,10,58,38,54,61,60];
+  const HD_CENTERS = {
+    Head: [64, 61, 63], Ajna: [47, 24, 4, 17, 43, 11], Throat: [62, 23, 56, 35, 12, 45, 33, 8, 31, 20, 16],
+    G: [1, 13, 25, 46, 2, 15, 10, 7], Heart: [21, 40, 26, 51], 'Solar Plexus': [6, 37, 22, 36, 30, 55, 49],
+    Sacral: [5, 14, 29, 59, 9, 3, 42, 27, 34], Spleen: [48, 57, 44, 50, 32, 28, 18], Root: [53, 60, 52, 19, 39, 41, 58, 38, 54] };
+  const HD_CHANNELS = [[1,8,'Inspiration'],[2,14,'The Beat'],[3,60,'Mutation'],[4,63,'Logic'],[5,15,'Rhythm'],[6,59,'Intimacy'],[7,31,'The Alpha'],
+    [9,52,'Concentration'],[10,20,'Awakening'],[10,34,'Exploration'],[10,57,'Perfected Form'],[11,56,'Curiosity'],[12,22,'Openness'],
+    [13,33,'The Prodigal'],[16,48,'The Wavelength'],[17,62,'Acceptance'],[18,58,'Judgment'],[19,49,'Synthesis'],[20,34,'Charisma'],
+    [20,57,'The Brainwave'],[21,45,'Money'],[23,43,'Structuring'],[24,61,'Awareness'],[25,51,'Initiation'],[26,44,'Surrender'],
+    [27,50,'Preservation'],[28,38,'Struggle'],[29,46,'Discovery'],[30,41,'Recognition'],[32,54,'Transformation'],[34,57,'Power'],
+    [35,36,'Transitoriness'],[37,40,'Community'],[39,55,'Emoting'],[42,53,'Maturation'],[47,64,'Abstraction']];
+  const HD_BODIES = ['Sun', 'Earth', 'North Node', 'South Node', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'];
+  const MOTORS = ['Heart', 'Solar Plexus', 'Sacral', 'Root'];
+  const gateCenter = {};
+  for (const [c, gs] of Object.entries(HD_CENTERS)) gs.forEach(g => gateCenter[g] = c);
+
+  function gateOf(lon) {
+    const x = norm(lon - 302) / 5.625;
+    return { gate: HD_ORDER[Math.floor(x)], line: Math.floor((x % 1) * 6) + 1 };
+  }
+  function activations(utcDate) {
+    const c = westernChart(utcDate, 0, 0);
+    const lonOf = n => c.planets.find(p => p.name === n).lon;
+    const lon = { Sun: lonOf('Sun'), Earth: lonOf('Sun') + 180, 'North Node': lonOf('North Node'), 'South Node': lonOf('South Node') };
+    ['Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'].forEach(n => lon[n] = lonOf(n));
+    return HD_BODIES.map(b => ({ body: b, ...gateOf(lon[b]) }));
+  }
+  // Design moment: when the Sun was 88° of arc before its birth position (about 88 days earlier)
+  function designDate(utcDate) {
+    const sunLon = d => westernChart(d, 0, 0).planets.find(p => p.name === 'Sun').lon;
+    const target = norm(sunLon(utcDate) - 88);
+    let t = utcDate.getTime() - 88 * 864e5;
+    for (let i = 0; i < 30; i++) {
+      const diff = ((sunLon(new Date(t)) - target + 540) % 360) - 180;
+      if (Math.abs(diff) < 1e-7) break;
+      t -= diff / 0.9856 * 864e5;
+    }
+    return new Date(t);
+  }
+
+  function humanDesign(utcDate) {
+    const dDate = designDate(utcDate);
+    const personality = activations(utcDate), design = activations(dDate);
+    const pGates = new Set(personality.map(a => a.gate)), dGates = new Set(design.map(a => a.gate));
+    const active = new Set([...pGates, ...dGates]);
+    const channels = HD_CHANNELS.filter(([a, b]) => active.has(a) && active.has(b))
+      .map(([a, b, name]) => ({ gates: [a, b], name, centers: [gateCenter[a], gateCenter[b]] }));
+    const defined = new Set(channels.flatMap(ch => ch.centers));
+    // connected groups of defined centers
+    const adj = {}; defined.forEach(c => adj[c] = new Set());
+    channels.forEach(ch => { adj[ch.centers[0]].add(ch.centers[1]); adj[ch.centers[1]].add(ch.centers[0]); });
+    const seen = new Set(), groups = [];
+    defined.forEach(c => { if (seen.has(c)) return; const g = [], st = [c]; seen.add(c);
+      while (st.length) { const x = st.pop(); g.push(x); adj[x].forEach(y => { if (!seen.has(y)) { seen.add(y); st.push(y); } }); } groups.push(g); });
+    const linked = (from, to) => groups.some(g => g.includes(from) && g.includes(to));
+    const motorToThroat = MOTORS.some(m => defined.has(m) && linked(m, 'Throat'));
+    let type;
+    if (!defined.size) type = 'Reflector';
+    else if (defined.has('Sacral')) type = motorToThroat ? 'Manifesting Generator' : 'Generator';
+    else type = motorToThroat ? 'Manifestor' : 'Projector';
+    let authority;
+    if (defined.has('Solar Plexus')) authority = 'Emotional';
+    else if (defined.has('Sacral')) authority = 'Sacral';
+    else if (defined.has('Spleen')) authority = 'Splenic';
+    else if (defined.has('Heart')) authority = linked('Heart', 'Throat') ? 'Ego Manifested' : 'Ego Projected';
+    else if (defined.has('G') && linked('G', 'Throat')) authority = 'Self-Projected';
+    else authority = type === 'Reflector' ? 'Lunar' : 'Mental (outer authority)';
+    const STRAT = { Generator: 'To respond', 'Manifesting Generator': 'To respond, then inform', Manifestor: 'To inform', Projector: 'Wait for the invitation', Reflector: 'Wait a lunar cycle' };
+    const SIG = { Generator: ['Satisfaction', 'Frustration'], 'Manifesting Generator': ['Satisfaction', 'Frustration and anger'], Manifestor: ['Peace', 'Anger'], Projector: ['Success', 'Bitterness'], Reflector: ['Surprise', 'Disappointment'] };
+    const pl = personality[0].line, dl = design[0].line, profile = `${pl}/${dl}`;
+    const angle = profile === '4/1' ? 'Juxtaposition' : pl >= 5 ? 'Left Angle' : 'Right Angle';
+    const DEF = ['No definition', 'Single definition', 'Split definition', 'Triple split definition', 'Quadruple split definition'];
+    return {
+      designDate: dDate, personality, design, channels,
+      definedCenters: Object.keys(HD_CENTERS).filter(c => defined.has(c)),
+      openCenters: Object.keys(HD_CENTERS).filter(c => !defined.has(c)),
+      activeGates: [...active].sort((a, b) => a - b),
+      hangingGates: [...active].filter(g => !channels.some(ch => ch.gates.includes(g))).sort((a, b) => a - b),
+      type, strategy: STRAT[type], authority, profile,
+      signature: SIG[type][0], notSelf: SIG[type][1],
+      definition: DEF[groups.length] || `${groups.length} groups`,
+      cross: { angle, gates: `${personality[0].gate}/${personality[1].gate} | ${design[0].gate}/${design[1].gate}` }
+    };
+  }
+
+  const api = { SIGNS, humanDesign, HD_CENTERS, HD_CHANNELS, gateCenter, trueNode, localToUTC, westernChart, saju, cartoLines, linesNearCity };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.AstroEngine = api;
 })(this);

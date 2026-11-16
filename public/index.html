@@ -182,6 +182,32 @@ button.chip { cursor: pointer; } button.chip:hover { border-color: var(--blue); 
 .lens b { display: block; font-size: 13.5px; color: var(--blue); margin-bottom: 3px; }
 .lens.k b { color: var(--brass); }
 
+/* human design */
+.hd-top { display: grid; grid-template-columns: minmax(220px, 300px) 1fr; gap: 24px; align-items: start; margin: 8px 0 18px; }
+.bodygraph { width: 100%; height: auto; display: block; }
+.bg-ch { stroke: #E1E5EF; stroke-width: 3; stroke-linecap: round; }
+.bg-ch.on { stroke: var(--blue); stroke-width: 3.5; }
+.bg-ch.half { stroke: #9AA5DD; stroke-width: 3.5; }
+.bg-c { fill: #fff; stroke: #B9C0DE; stroke-width: 1.5; }
+.bg-c.on { fill: var(--blue); stroke: var(--blue); }
+.bg-g { cursor: pointer; outline: none; } .bg-g:hover .bg-c, .bg-g:focus .bg-c { stroke: var(--brass); stroke-width: 2.5; }
+.hd-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px 18px; }
+.fact { border-top: 1px solid var(--line); padding-top: 8px; }
+.fact span { display: block; font-size: 13px; color: var(--muted); }
+.fact b { font: 500 19px/1.25 var(--serif); }
+.hd-item { padding: 14px 0; border-top: 1px solid var(--line); transition: background .4s; }
+.hd-item h3 { font-size: 20px; }
+.hd-item.flash { background: var(--blue-soft); }
+.rxrow { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.rx { background: #fff; border: 1px solid var(--line); color: var(--muted); font-weight: 500; padding: 6px 12px; border-radius: 999px; font-size: 13.5px; }
+.rx.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+.rx-note { margin: 8px 0 0; padding-left: 12px; border-left: 3px solid var(--brass); font: 16px/1.5 var(--serif); }
+.rx-edit { margin-top: 8px; }
+.exp-on { background: #F9FAFD; padding: 14px; border-radius: 12px; border: 1px solid var(--line); margin-top: 10px; }
+.exbar { height: 6px; border-radius: 4px; background: var(--line); margin: 4px 0 12px; overflow: hidden; } .exbar i { display: block; height: 100%; background: var(--blue); }
+.exlog { margin: 10px 0 0; padding-left: 18px; font-size: 14px; } .exlog li { margin: 3px 0; }
+.hd-gates td:nth-child(2), .hd-gates td:nth-child(3) { font-variant-numeric: tabular-nums; }
+
 /* support + usage */
 .support { border-left: 4px solid var(--rose); }
 details.usage { margin-top: 30px; font-size: 13px; color: var(--muted); }
@@ -195,7 +221,8 @@ details.usage td, details.usage th { padding: 5px 4px; border-bottom: 1px solid 
   .cards { gap: 8px; } .card .front .nm { font-size: 16px; } .card .front .kw { font-size: 11.5px; }
   .row { flex-direction: column; }
   .form { grid-template-columns: 1fr; } .form > div { grid-column: auto !important; }
-  .nav { gap: 16px; }
+  .nav { gap: 16px; overflow-x: auto; max-width: 100%; padding-bottom: 4px; white-space: nowrap; }
+  .hd-top { grid-template-columns: 1fr; } .bodygraph { max-width: 260px; margin: 0 auto; }
 }
 @media (prefers-reduced-motion: reduce) { .card .inner { transition: none; } }
 </style>
@@ -205,7 +232,10 @@ details.usage td, details.usage th { padding: 5px 4px; border-bottom: 1px solid 
   <header class="top">
     <div class="brand"><h1>Trine</h1><span>Decisions, decisions…</span></div>
     <nav class="nav hidden" id="nav">
-      <button data-v="chart">My chart</button>
+      <button data-v="western">Birth chart</button>
+      <button data-v="saju">Saju</button>
+      <button data-v="hd">Human Design</button>
+      <button data-v="map">Map</button>
       <button data-v="cards">Cards</button>
       <button data-v="decide">Decide</button>
       <button class="small" id="editBirth">Edit birth data</button>
@@ -215,8 +245,8 @@ details.usage td, details.usage th { padding: 5px 4px; border-bottom: 1px solid 
   <!-- BIRTH DATA -->
   <section id="birth">
     <div class="welcome">
-      <h2>Your chart, your saju and your map, in one place.</h2>
-      <p class="sub">Enter your birth details once. Then explore your sky, pull cards, or work through a decision.</p>
+      <h2>Your chart, saju, Human Design and map, in one place.</h2>
+      <p class="sub">Enter your birth details once. Then explore each one on its own, pull cards, or work through a decision.</p>
     </div>
     <div class="panel">
       <div class="form">
@@ -300,6 +330,7 @@ details.usage td, details.usage th { padding: 5px 4px; border-bottom: 1px solid 
 </div>
 <script src="/app.js"></script>
 <script src="/reflect.js"></script>
+<script src="/hd.js"></script>
 <script src="/chart.js"></script>
 </body>
 </html>

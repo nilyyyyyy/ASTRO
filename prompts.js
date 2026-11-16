@@ -8,6 +8,13 @@ function profileSummary(p) {
   let s = `WESTERN CHART (tropical, whole-sign houses)\nRising ${p.ascendant}; MC ${p.midheaven}\n${pl}\n\n` +
     `SAJU (Four Pillars)\n${pillars}\nDay Master: ${p.saju.dayMaster}. Element balance: ${bal}.`;
   if (p.currentYearPillar) s += `\nCurrent year pillar: ${p.currentYearPillar}.`;
+  if (p.hd) {
+    const h = p.hd;
+    s += `\n\nHUMAN DESIGN\nType ${h.type}; Strategy: ${h.strategy}; Authority: ${h.authority}; Profile ${h.profile}; ${h.definition}; Signature ${h.signature}, not-self ${h.notSelf}.` +
+      `\nDefined centers: ${(h.definedCenters || []).join(', ') || 'none'}. Channels: ${(h.channels || []).join(', ') || 'none'}. Cross: ${h.cross}.` +
+      (h.reactions && h.reactions.length ? `\nTheir own reactions to their chart: ${h.reactions.join('; ')}` : '') +
+      (h.experiments && h.experiments.length ? `\nExperiments they are running: ${h.experiments.join('; ')}` : '');
+  }
   if (p.places && p.places.length) {
     s += `\n\nASTROCARTOGRAPHY (planet lines within 700 km of each place)\n` +
       p.places.map(pl => `${pl.label}: ${pl.lines.length ? pl.lines.map(l => `${l.planet} ${l.angle} ${l.km} km`).join(', ') : 'no lines (neutral)'}`).join('\n');
@@ -48,7 +55,7 @@ Reply with JSON only: {"support": false, "insight": "...", "prompt": "Try this: 
 function chatMessages(profile, history) {
   return [
     { role: 'system', content:
-`You are the astrologer inside a reflective astrology app. The user is exploring their own birth chart, Korean saju and astrocartography, and asks you questions about them.
+`You are the astrologer inside a reflective astrology app. The user is exploring their own birth chart, Korean saju, Human Design and astrocartography, and asks you questions about them. When they have reacted to parts of their Human Design (feels true / not true / notes), take those reactions seriously.
 Explain in plain, warm language, with jargon only when you explain it right away. Refer to their actual placements and pillars from the data below; never invent placements that are not listed. If something is not in the data (for example a minor asteroid), say so.
 Present astrology as a lens for self-reflection, not as fact or certain prediction. Never make medical, legal or financial calls; suggest a qualified professional for those.
 If the user seems to be in crisis or thinking about harming themselves, set the chart aside, respond with care, and encourage them to reach out to someone they trust or a local crisis line.
@@ -87,6 +94,7 @@ function readingMessages(profile, decision, kind, answers, cards, notes = []) {
 - WHEN: Saju (Day Master, element balance, current year pillar) — timing and energy.
 - WHERE: astrocartography lines for any places involved (Venus = attraction/being seen; Jupiter = growth; Saturn = hard work; Sun = visibility; Moon = home; Mercury = learning; Mars = drive/friction; Uranus = change; Neptune = dreaminess/confusion; Pluto = intensity).
 - NOW: the three tarot cards the user drew.
+- HOW (if Human Design is given): use their Authority and Strategy to shape the gut check and next step (e.g. Splenic: trust the first instinct; Emotional: wait for calm; Sacral: gut yes/no; Projector: wait for the invitation).
 Rules: never tell the user what to choose and never predict outcomes as certain. Use their own answers, their own questions and their noted thoughts — they matter more than the stars. If they wrote questions of their own, acknowledge at least one of them. Plain, warm, specific language; no jargon without a short explanation. Be honest when lenses conflict.
 ${SAFETY}
 Reply with JSON only:
