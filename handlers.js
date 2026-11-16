@@ -1,5 +1,5 @@
 // The AI endpoints, used by server.js.
-const { questionsMessages, hintMessages, chatMessages, tarotMessages, readingMessages } = require('./prompts');
+const { questionsMessages, hintMessages, chatMessages, tarotMessages, notesMessages, readingMessages } = require('./prompts');
 const { askJSON, callJev, callOpenRouter } = require('./ai');
 const CFG = require('./config');
 
@@ -54,6 +54,13 @@ async function apiReading(body) {
   return { ...res.data, usage };
 }
 
+// Automatic notes for a lens or a city. No user-written text, so no safety screen is needed.
+async function apiNotes(body) {
+  const lens = ['western', 'saju', 'hd', 'map', 'city'].includes(body.lens) ? body.lens : 'western';
+  const res = await askJSON(CFG.modelFast, notesMessages(body.profile, lens, String(body.extra || '').slice(0, 4000)), lens === 'city' ? 250 : 700);
+  return { headline: res.data.headline || '', notes: Array.isArray(res.data.notes) ? res.data.notes.slice(0, 5) : [], usage: res.usage };
+}
+
 // Cards tool: quick tarot pull. The question (if any) is screened by Jev first.
 async function apiTarot(body) {
   const usage = [];
@@ -73,7 +80,7 @@ function supportMessage() {
 }
 
 
-const HANDLERS = { questions: apiQuestions, hint: apiHint, chat: apiChat, tarot: apiTarot, reading: apiReading };
+const HANDLERS = { questions: apiQuestions, hint: apiHint, chat: apiChat, tarot: apiTarot, notes: apiNotes, reading: apiReading };
 
 // Run one endpoint and always answer with JSON (used by both server.js and Vercel).
 async function handle(name, body) {

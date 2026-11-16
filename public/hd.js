@@ -40,6 +40,31 @@ const HDView = (() => {
     Sacral: ['Steady life force and work energy.', 'You amplify energy around you but do not have it consistently. Know when enough is enough.'],
     Spleen: ['Instinct, timing and a sense of what is healthy for you, in the moment.', 'You may hold on to things that are not good for you. Practise letting go.'],
     Root: ['A steady way of handling pressure and stress.', 'You feel outside pressure strongly. Not everything is urgent.'] };
+  // What each center is about, in plain words
+  const CENTER_ABOUT = { Head: 'inspiration and questions', Ajna: 'thinking and making sense of things', Throat: 'speaking and taking action',
+    G: 'identity, love and direction', Heart: 'willpower and self-worth', 'Solar Plexus': 'emotions and feelings', Sacral: 'life force and work energy',
+    Spleen: 'instinct, health and timing', Root: 'pressure, stress and drive' };
+  // What each channel means, in plain words
+  const CHANNEL_TXT = {
+    '1-8': 'Creative self-expression: being yourself in a way that inspires others.', '2-14': 'Steady energy behind your direction in life; you can keep resources and projects going.',
+    '3-60': 'Change comes in pulses: long quiet stretches, then sudden innovation.', '4-63': 'You question things, look for patterns and want answers that make logical sense.',
+    '5-15': 'You are in tune with natural rhythms and routines, and others fall into step with you.', '6-59': 'You bond deeply with people and create closeness easily.',
+    '7-31': 'Natural leadership that works best when others choose you to lead.', '9-52': 'Focus: you can stay with details and keep going until something is done.',
+    '10-20': 'You live your own convictions in the moment, without needing permission.', '10-34': 'Strong energy to follow your own path and your own beliefs.',
+    '10-57': 'An intuitive sense for what keeps you well, safe and true to yourself.', '11-56': 'You collect ideas and experiences and turn them into stories for others.',
+    '12-22': 'Your emotional expression is moving when the mood is right; timing is everything.', '13-33': 'You listen, gather experiences, then share the lessons later.',
+    '16-48': 'Talent that deepens through practice and repetition until it becomes mastery.', '17-62': 'You organise opinions with facts and details and explain them clearly.',
+    '18-58': 'You see what could be better and feel driven to correct and improve it.', '19-49': 'Sensitive to people\'s needs and to the principles that hold relationships together.',
+    '20-34': 'Busy, self-powered energy that goes straight into action.', '20-57': 'Intuitive insight that comes out in the moment, often surprisingly accurate.',
+    '21-45': 'You like managing resources and being in charge of the material side of life.', '23-43': 'Original insights; you explain new ideas, and timing decides whether people hear them.',
+    '24-61': 'You turn mysteries over in your mind until an "aha" moment arrives.', '25-51': 'The courage to take risks and leap into the unknown, and to grow from the shock.',
+    '26-44': 'You sense what people need and are good at persuading, selling and passing on lessons from the past.',
+    '27-50': 'You care for and protect others and feel responsible for shared values.', '28-38': 'You find meaning through challenges and keep going with stubborn determination.',
+    '29-46': 'When you commit fully to an experience, you discover things through it.', '30-41': 'Strong desires and dreams that pull you towards new experiences.',
+    '32-54': 'Ambition to rise, with an instinct for what will last.', '34-57': 'Intuitive, in-the-moment action: you act fast when it matters.',
+    '35-36': 'Hunger for new experiences, and growing wiser from each one.', '37-40': 'Bonds built on support, loyalty and fair agreements.',
+    '39-55': 'Emotional depth and moods that fuel creativity and spirit.', '42-53': 'Starting and finishing cycles; you grow by seeing things through.',
+    '47-64': 'You make sense of the past through images and stories until it clicks.' };
   // Bodygraph layout (viewBox 300 x 470)
   const POS = { Head: [150, 38], Ajna: [150, 108], Throat: [150, 184], G: [150, 262], Heart: [212, 292], 'Solar Plexus': [250, 352], Sacral: [150, 352], Spleen: [50, 352], Root: [150, 430] };
 
@@ -147,6 +172,7 @@ const HDView = (() => {
     $('hdPane').innerHTML = `
       <h2>Human Design</h2>
       <p class="sub">Calculated from your birth moment and your "design" moment on ${hd.designDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}, when the Sun was 88° earlier. Tap anything to react to it.</p>
+      <div class="ai-notes" data-lens="hd"></div>
       <div class="hd-top">
         <div>${bodygraph()}<p class="note" style="text-align:center">Filled shapes are defined centers. Solid lines are complete channels; short lines are single gates.</p></div>
         <div class="hd-facts">
@@ -163,11 +189,28 @@ const HDView = (() => {
         ${item('signature', `Signature: ${hd.signature}. Not-self: ${hd.notSelf}`, `Feeling ${hd.signature.toLowerCase()} is the sign you are living your design. Feeling ${hd.notSelf.toLowerCase()} is the signal you have drifted from it.`)}
       </div>
       <div class="hd-sec hidden" data-h="centers">
-        ${Object.keys(CENTER).map(c => { const on = hd.definedCenters.includes(c); return item(`center:${c}`, `${c}: ${on ? 'defined' : 'open'}`, CENTER[c][on ? 0 : 1]); }).join('')}
-        ${hd.channels.map(ch => item(`channel:${ch.gates.join('-')}`, `Channel ${ch.gates.join('-')}: ${ch.name}`, `A fixed connection between your ${ch.centers[0]} and ${ch.centers[1]} centers: a reliable part of who you are.`)).join('')}
+        <div class="hd-explain">
+          <h3>What defined and open mean</h3>
+          <p>Your bodygraph has nine centers. Each one looks after one part of life, like emotions, willpower or how you speak.</p>
+          <p><b>Defined</b> (filled in blue): this part of you works the same way all the time. It is reliable and it is yours. You have ${hd.definedCenters.length} of these.</p>
+          <p><b>Open</b> (white): this part of you is not fixed. You take in the energy of the people around you and feel it even more strongly than they do. That makes you sensitive and often wise here, but it can also make you mistake other people's feelings or pressure for your own. You have ${hd.openCenters.length} of these.</p>
+          <p class="note">Neither is better. Open centers are where you learn the most about other people.</p>
+        </div>
+        <h3 class="hd-subhead">Your centers</h3>
+        ${Object.keys(CENTER).map(c => { const on = hd.definedCenters.includes(c);
+          return item(`center:${c}`, `${c}: ${CENTER_ABOUT[c]}`, `<span class="state ${on ? 'on' : ''}">${on ? 'Defined: consistent in you' : 'Open: you take this in from others'}</span> ${CENTER[c][on ? 0 : 1]}`); }).join('')}
+        <div class="hd-explain">
+          <h3>What a channel is</h3>
+          <p>A channel is a line between two centers. When both ends are active in your chart, the channel is complete, and it becomes a fixed trait: a gift you always have access to. Complete channels are what make centers defined.</p>
+        </div>
+        <h3 class="hd-subhead">Your channels</h3>
+        ${hd.channels.map(ch => item(`channel:${ch.gates.join('-')}`, `${ch.name} (${ch.gates.join('-')})`, `<span class="state on">Connects ${ch.centers[0]} and ${ch.centers[1]}</span> ${CHANNEL_TXT[ch.gates.join('-')] || ''}`)).join('') || '<p class="note">You have no complete channels.</p>'}
       </div>
       <div class="hd-sec hidden" data-h="gates">
-        <p class="note">Personality is your conscious side (birth). Design is your unconscious side (88° earlier).</p>
+        <div class="hd-explain">
+          <p>Gates are the 64 small points on the bodygraph. Each planet in your chart switches one gate on. The number after the dot is the line (1 to 6), which adds a flavour.</p>
+          <p><b>Personality</b> is the side of you that you know and recognise (your birth moment). <b>Design</b> is the side others often see before you do (88° earlier).</p>
+        </div>
         <table class="cv-table hd-gates"><thead><tr><th>Planet</th><th>Personality</th><th>Design</th></tr></thead><tbody>
           ${hd.personality.map((a, i) => `<tr><td>${a.body}</td><td>${a.gate}.${a.line}</td><td>${hd.design[i].gate}.${hd.design[i].line}</td></tr>`).join('')}
         </tbody></table>
@@ -178,6 +221,7 @@ const HDView = (() => {
         ${experimentList().map(expHtml).join('')}
       </div>`;
     bind();
+    if (typeof Notes !== 'undefined' && !$('hdPane').classList.contains('hidden')) Notes.fill('hd');
   }
 
   function bind() {

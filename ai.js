@@ -91,6 +91,13 @@ function mockLLM(messages) {
   const isReading = messages[0].content.includes('three lenses');
   const isHint = messages[0].content.includes('is stuck on one question');
   const isChat = messages[0].content.includes('asks you questions about them');
+  if (messages[0].content.includes('You write the short notes')) {
+    const one = messages[0].content.includes('exactly 1 note');
+    const notes = [{ title: '[Mock] What stands out', text: '[Mock] A short, plain note about what you are looking at, based on your actual placements.' }];
+    if (!one) notes.push({ title: '[Mock] A gift', text: '[Mock] Something this part of your chart makes easy for you.' }, { title: '[Mock] Worth watching', text: '[Mock] A tension or pattern to notice in daily life.' });
+    const text = JSON.stringify({ headline: one ? '' : '[Mock] One sentence that sums up this part of your chart.', notes });
+    return { text, usage: { model: 'mock', input: Math.ceil(messages.map(m => m.content).join('').length / 4), output: Math.ceil(text.length / 4), cost: null } };
+  }
   if (messages[0].content.includes('You are the tarot reader')) {
     const pos = [...messages[1].content.matchAll(/^(\w[\w ]*): (.+?) —/gm)].map(m => m[1]).filter(x => x !== 'Question' && x !== 'Chart');
     const text = JSON.stringify({ support: false, summary: '[Mock] A spread about letting go of what you have outgrown so something new can arrive.',

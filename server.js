@@ -10,14 +10,14 @@ const PUBLIC = path.join(__dirname, 'public');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png' };
 
 // Startup check: report missing files clearly instead of crashing later.
-const REQUIRED = ['index.html', 'app.js', 'chart.js', 'hd.js', 'reflect.js', 'tarot.js', 'engine.js',
+const REQUIRED = ['index.html', 'app.js', 'chart.js', 'hd.js', 'notes.js', 'reflect.js', 'tarot.js', 'engine.js',
   'vendor/astronomy.js', 'vendor/lunar.js', 'vendor/topojson.js', 'vendor/land.json'];
 const missing = REQUIRED.filter(f => !fs.existsSync(path.join(PUBLIC, f)));
 if (missing.length) console.error('\nMISSING FILES in public/:\n  ' + missing.join('\n  ') + '\n-> Upload the whole public folder, including public/vendor.\n');
 
 http.createServer(async (req, res) => {
   const url = req.url.split('?')[0];
-  const api = url.match(/^\/api\/(questions|hint|chat|tarot|reading)$/);
+  const api = url.match(/^\/api\/(questions|hint|chat|tarot|notes|reading)$/);
   if (api && req.method === 'POST') {
     let raw = ''; for await (const c of req) raw += c;
     let body; try { body = JSON.parse(raw || '{}'); } catch (e) { body = {}; }
