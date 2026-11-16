@@ -10,21 +10,49 @@ function withEstimate(u) {
   return { ...u, cost: (u.input * p[0] + u.output * p[1]) / 1e6, estimated: true };
 }
 
+// Thinking ("reasoning") settings per model. On OpenRouter, Claude Haiku 5.5 thinks by default and the
+// thinking counts toward max_tokens, which can leave no room for the answer. So: Haiku -> thinking off.
+// Sonnet 5.5 cannot switch thinking off -> keep it low, hide it, and leave extra room.
+// Other models (Gemini, free models) -> hide any thinking and leave some extra room.
+function thinkingFor(model) {
+  if (/haiku/i.test(model)) return { reasoning: { enabled: false }, extra: 0 };
+  if (/anthropic\/|claude/i.test(model)) return { reasoning: { effort: 'low', exclude: true }, extra: 4000 };
+  return { reasoning: { exclude: true }, extra: 2000 };
+}
+
 async function callOpenRouter(model, messages, maxTokens) {
   if (CFG.mock) { const m = mockLLM(messages); return { text: m.text, usage: withEstimate({ ...m.usage, model: model + ' (mock)' }) }; }
-  const r = await fetch(`${CFG.orBase}/v1/chat/completions`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${CFG.orKey}`, 'Content-Type': 'application/json',
-      'HTTP-Referer': 'http://localhost', 'X-Title': 'Astro Decision App' },
-    body: JSON.stringify({ model, messages, max_tokens: maxTokens, temperature: 0.7, usage: { include: true } })
-  });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok || j.error) throw new Error(`OpenRouter ${r.status} (${model}): ${JSON.stringify(j.error || j).slice(0, 300)}`);
-  const msg = j.choices && j.choices[0] && j.choices[0].message;
-  const text = msg && (typeof msg.content === 'string' ? msg.content : (msg.content || []).map(c => c.text || '').join(''));
-  if (!text) throw new Error(`OpenRouter (${model}) returned an empty answer`);
-  const u = j.usage || {};
-  return { text, usage: withEstimate({ model, input: u.prompt_tokens || 0, output: u.completion_tokens || 0, cost: u.cost ?? null }) };
+  const t = thinkingFor(model);
+  const isClaude = /anthropic\/|claude/i.test(model);
+  const attempts = [
+    { reasoning: t.reasoning, max_tokens: maxTokens + t.extra },
+    // second try: let the provider choose its thinking setting, with much more room for the answer
+    { reasoning: { exclude: true }, max_tokens: maxTokens * 3 + 4000 },
+  ];
+  let last = '';
+  for (const a of attempts) {
+    const body = { model, messages, max_tokens: a.max_tokens, reasoning: a.reasoning, usage: { include: true } };
+    if (!isClaude) body.temperature = 0.7; // Claude rejects custom temperature while thinking
+    const r = await fetch(`${CFG.orBase}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${CFG.orKey}`, 'Content-Type': 'application/json',
+        'HTTP-Referer': 'http://localhost', 'X-Title': 'Trine' },
+      body: JSON.stringify(body)
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || j.error) {
+      last = `OpenRouter ${r.status} (${model}): ${JSON.stringify(j.error || j).slice(0, 300)}`;
+      if (r.status === 400 && /reasoning|thinking/i.test(last)) continue; // thinking setting not accepted: try the other one
+      throw new Error(last);
+    }
+    const choice = j.choices && j.choices[0], msg = choice && choice.message;
+    const text = msg && (typeof msg.content === 'string' ? msg.content : (msg.content || []).map(c => c.text || '').join(''));
+    const u = j.usage || {};
+    if (text && text.trim()) return { text, usage: withEstimate({ model, input: u.prompt_tokens || 0, output: u.completion_tokens || 0, cost: u.cost ?? null }) };
+    last = `OpenRouter (${model}) returned an empty answer (finish reason: ${choice && choice.finish_reason || 'unknown'})`;
+    console.warn(last + ', retrying with more room');
+  }
+  throw new Error(last);
 }
 
 // Ask a model for JSON; retry once if the reply can't be parsed.
