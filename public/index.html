@@ -182,6 +182,17 @@ button.chip { cursor: pointer; } button.chip:hover { border-color: var(--blue); 
 .lens b { display: block; font-size: 13.5px; color: var(--blue); margin-bottom: 3px; }
 .lens.k b { color: var(--brass); }
 
+/* automatic notes */
+.ai-notes { margin: 10px 0 18px; }
+.ai-head { font: 400 21px/1.35 var(--serif); margin: 0 0 12px; }
+.ai-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.ai-note { background: #F6F7FC; border-radius: 12px; padding: 12px 14px; }
+.ai-note b { display: block; font-size: 14px; color: var(--blue); margin-bottom: 3px; }
+.ai-note p { margin: 0; font-size: 14.5px; }
+.ai-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+.ai-wait { font-style: italic; }
+.city-note { margin: 8px 0 0; font: 16px/1.5 var(--serif); }
+
 /* human design */
 .hd-top { display: grid; grid-template-columns: minmax(220px, 300px) 1fr; gap: 24px; align-items: start; margin: 8px 0 18px; }
 .bodygraph { width: 100%; height: auto; display: block; }
@@ -335,6 +346,7 @@ details.usage td, details.usage th { padding: 5px 4px; border-bottom: 1px solid 
 </div>
 <script src="/app.js"></script>
 <script src="/reflect.js"></script>
+<script src="/notes.js"></script>
 <script src="/hd.js"></script>
 <script src="/chart.js"></script>
 </body>

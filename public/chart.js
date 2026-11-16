@@ -95,6 +95,8 @@ const ChartView = (() => {
 
       <div class="panel cv-pane" data-t="western">
         <h2>Birth chart</h2>
+        <div class="ai-notes" data-lens="western"></div>
+        <h3 class="hd-subhead">Every placement</h3>
         <table class="cv-table"><thead><tr><th></th><th>Placement</th><th>House</th><th>What it says</th></tr></thead><tbody>
           <tr><td class="g">↑</td><td><b>Rising ${f(c.ascendant)}</b></td><td>1</td><td>The first impression you give: ${SIGN[c.ascendant.sign]}.</td></tr>
           <tr><td class="g">⌃</td><td><b>Midheaven ${f(c.midheaven)}</b></td><td>${c.midheaven.house}</td><td>Your public path and calling: ${SIGN[c.midheaven.sign]}.</td></tr>
@@ -107,6 +109,7 @@ const ChartView = (() => {
       <div class="panel cv-pane hidden" data-t="saju">
         <h2>Saju: your four pillars</h2>
         <p class="sub">Korean saju reads your birth year, month, day and hour as four pairs of elements. The day pillar is you.</p>
+        <div class="ai-notes" data-lens="saju"></div>
         <div class="cv-pillars">${s.pillars.map(p => `<div class="cv-pillar ${p.pillar === 'Day' ? 'me' : ''}">
           <small>${p.pillar}${p.pillar === 'Day' ? ' (you)' : ''}</small><div class="hz">${p.hanja}</div>
           <div class="el" style="color:${ELEMENT_COLORS[p.stemElement]}">${p.polarity} ${p.stemElement}</div><div class="el" style="color:${ELEMENT_COLORS[p.branchElement]}">${p.animal}, ${p.branchElement}</div>
@@ -122,6 +125,7 @@ const ChartView = (() => {
       <div class="panel cv-pane hidden" data-t="map">
         <h2>Your map</h2>
         <p class="sub">Lines show where each planet was rising, setting, overhead or underfoot when you were born. The thicker pink Venus lines are where you tend to look and feel your best.</p>
+        <div class="ai-notes" data-lens="map"></div>
         <svg id="chartMap" viewBox="0 0 1000 500" class="map"></svg>
         <div class="legend">${Object.keys(COLORS).map(p => `<span><span class="sw" style="background:${COLORS[p]}"></span>${p}</span>`).join('')}<span>Solid: rising or overhead. Dashed: setting. Dotted: underfoot.</span></div>
         <label for="cvCityQ" style="margin-top:16px">Check a city</label><input id="cvCityQ" placeholder="e.g. London" autocomplete="off"><div class="results" id="cvCityResults"></div>
@@ -132,7 +136,7 @@ const ChartView = (() => {
 
       <div class="panel cv-chat" id="cvChat">
         <h2 id="cvChatTitle">Ask about your chart</h2>
-        <div id="cvLog" class="log"><div class="msg bot">Ask me anything about your birth chart, saju, Human Design or map. I'll answer from your actual placements.</div></div>
+        <div id="cvLog" class="log"><div class="msg bot">Want to go deeper than the notes above? Ask me anything about your birth chart, saju, Human Design or map. I'll answer from your actual placements.</div></div>
         <div class="chips" id="cvStarters"></div>
         <div class="row"><input id="cvInput" placeholder="Type your question" maxlength="500" aria-label="Your question"><button class="btn" id="cvSend">Ask</button></div>
       </div>
@@ -156,19 +160,23 @@ const ChartView = (() => {
     $('cvStarters').innerHTML = LENS[t].starters().map(q => `<button class="chip cv-starter">${esc(q)}</button>`).join('');
     $('cvStarters').classList.remove('hidden');
     $('cvStarters').querySelectorAll('.cv-starter').forEach(b => b.onclick = () => { $('cvInput').value = b.textContent; send(); });
-    if (t === 'map') renderMap('chartMap', places);
+    if (t === 'map') renderCities();
+    Notes.fill(t);
   }
 
   function renderCities() {
     $('cvCities').innerHTML = places.map((p, i) => {
       const near = AstroEngine.linesNearCity(state.chart, p.lat, p.lon, 700);
       const venus = near.some(n => n.planet === 'Venus');
-      return `<div class="city"><h3>${esc(p.label)}${i === places.length - 1 && p === state.birthPlace ? ' <span class="note">(where you were born)</span>' : ''}</h3>` +
+      return `<div class="city" data-ci="${i}"><h3>${esc(p.label)}${i === places.length - 1 && p === state.birthPlace ? ' <span class="note">(where you were born)</span>' : ''}</h3>` +
         (near.length ? near.map(n => `<span class="tag ${n.planet === 'Venus' ? 'venus' : ''}"><b style="color:${COLORS[n.planet]}">${n.planet} ${n.angle}</b>, ${n.km} km away</span>`).join('') +
           `<div class="note" style="margin-top:6px">${near.slice(0, 3).map(n => `${n.planet} ${n.angle}: ${PLANET[n.planet]} ${ANGLE[n.angle]}.`).join(' ')}</div>` +
           (venus ? '<div class="note" style="color:var(--rose);margin-top:4px">Venus line nearby: one of the places where you look your best.</div>' : '')
-          : '<span class="note">No planet lines within 700 km: a neutral, blank-page place for you.</span>') + '</div>';
+          : '<span class="note">No planet lines within 700 km: a neutral, blank-page place for you.</span>') + '<div class="city-ai"></div></div>';
     }).join('');
+    // write city notes only when the map is on screen (saves AI calls)
+    if (!$('chartMap').closest('.cv-pane').classList.contains('hidden'))
+      $('cvCities').querySelectorAll('.city').forEach(el => Notes.city(places[+el.dataset.ci], el.querySelector('.city-ai')));
     if (!$('chartMap').closest('.cv-pane').classList.contains('hidden')) renderMap('chartMap', places);
   }
 

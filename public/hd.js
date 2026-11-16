@@ -172,6 +172,7 @@ const HDView = (() => {
     $('hdPane').innerHTML = `
       <h2>Human Design</h2>
       <p class="sub">Calculated from your birth moment and your "design" moment on ${hd.designDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}, when the Sun was 88° earlier. Tap anything to react to it.</p>
+      <div class="ai-notes" data-lens="hd"></div>
       <div class="hd-top">
         <div>${bodygraph()}<p class="note" style="text-align:center">Filled shapes are defined centers. Solid lines are complete channels; short lines are single gates.</p></div>
         <div class="hd-facts">
@@ -220,6 +221,7 @@ const HDView = (() => {
         ${experimentList().map(expHtml).join('')}
       </div>`;
     bind();
+    if (typeof Notes !== 'undefined' && !$('hdPane').classList.contains('hidden')) Notes.fill('hd');
   }
 
   function bind() {

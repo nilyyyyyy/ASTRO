@@ -84,6 +84,25 @@ or {"support": true, "message": "..."}` },
   ];
 }
 
+// Automatic notes shown next to each lens (no question needed). lens: western | saju | hd | map | city
+function notesMessages(profile, lens, extra) {
+  const GUIDE = {
+    western: 'What stands out across the whole birth chart: the Sun, Moon and Rising together, clusters (several planets in one sign or house), and one or two tensions or gifts.',
+    saju: 'What their Day Master means in daily life, what the element balance means (what is strong, what is missing and how to balance it), and what this year brings.',
+    hd: 'What their Type, Strategy, Authority and Profile mean in daily life, and what their defined and open centers mean for them. If they reacted to parts of their chart, build on those reactions.',
+    map: 'Their overall map, using the city list given: which cities are strongest for love and attraction (Venus lines), career and visibility (Sun, Jupiter, MC lines), feeling at home (Moon, IC lines), and which need care (Saturn, Mars, Pluto, Neptune lines). Name real cities from the list.',
+    city: 'What living in or spending time in this one city might feel like for them, based on its planet lines. If it has no lines, what a neutral, blank-page place means for them.' };
+  const count = lens === 'city' ? 'exactly 1 note' : '3 to 5 notes';
+  return [
+    { role: 'system', content:
+`You write the short notes a person sees next to their own chart in a reflective astrology app. They have not asked a question: tell them what is interesting in what they are looking at.
+Focus: ${GUIDE[lens] || GUIDE.western}
+Plain, warm, specific language. Explain any term in a few words. Use only the data given; never invent placements. Present astrology as a lens for reflection, not certain prediction.
+Reply with JSON only: {"headline": "one sentence that sums it up", "notes": [{"title": "2 to 5 words", "text": "1 to 3 sentences"}]} with ${count}.` },
+    { role: 'user', content: `${profileSummary(profile)}${extra ? `\n\n${extra}` : ''}` }
+  ];
+}
+
 function readingMessages(profile, decision, kind, answers, cards, notes = []) {
   const qa = answers.map(a => `Q${a.own ? ' (their own question)' : ''}: ${a.q}\nA: ${a.a}${a.hint ? `\n(Astro hint they received: ${a.hint})` : ''}`).join('\n\n') +
     (notes.length ? `\n\nThoughts they noted down:\n- ${notes.join('\n- ')}` : '');
@@ -127,4 +146,4 @@ function jevRequest(decision, model = 'typesafe/jev-1.14') {
   };
 }
 
-module.exports = { profileSummary, questionsMessages, hintMessages, chatMessages, tarotMessages, readingMessages, jevRequest };
+module.exports = { profileSummary, questionsMessages, hintMessages, chatMessages, tarotMessages, notesMessages, readingMessages, jevRequest };
