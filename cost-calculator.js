@@ -1,6 +1,6 @@
 // Cost calculator: measures the app's real prompts and prices them with live OpenRouter rates.
 // Run: npm run cost            (models come from .env, or pass: node cost-calculator.js <fast> <deep>)
-const E = require('./engine');
+const E = require('./public/engine');
 const { questionsMessages, hintMessages, readingMessages, jevRequest } = require('./prompts');
 const CFG = require('./config');
 

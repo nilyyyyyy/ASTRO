@@ -81,15 +81,15 @@ const ChartView = (() => {
       <div class="panel cv-hero">
         <div class="cv-hero-text">
           <h2>${state.name ? esc(state.name) + '\'s sky' : 'Your sky'}</h2>
-          <p class="sub" style="margin:0 0 12px">Born ${esc($('date').value)} at ${esc($('time').value)} · ${esc(state.birthPlace.label)}</p>
-          <div class="chips"><div class="chip">Sun <b>${f(sun)}</b></div><div class="chip">Moon <b>${f(moon)}</b></div><div class="chip">Rising <b>${f(c.ascendant)}</b></div><div class="chip">Day Master <b>${dmKey}</b></div></div>
+          <p class="sub" style="margin:0 0 12px">Born ${esc(new Date($('date').value + 'T12:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }))} at ${esc($('time').value)} in ${esc(state.birthPlace.label)}</p>
+          <div class="chips"><div class="chip">Sun <b>${f(sun)}</b></div><div class="chip">Moon <b>${f(moon)}</b></div><div class="chip">Rising <b>${f(c.ascendant)}</b></div><div class="chip">Day master <b>${dmKey}</b></div></div>
           <p class="cv-big3">Your <b>Sun in ${sun.sign}</b> is ${PLANET.Sun}: ${SIGN[sun.sign]}. Your <b>Moon in ${moon.sign}</b> shows ${PLANET.Moon}: ${SIGN[moon.sign]}. With <b>${c.ascendant.sign} rising</b>, people first meet someone ${SIGN[c.ascendant.sign]}.</p>
-          <button id="cvToChat" class="ghost" style="width:auto;padding:9px 16px">✦ Ask about your chart</button>
+          <button id="cvToChat" class="ghost">Ask about your chart</button>
         </div>
         <div class="cv-wheel">${wheel(c)}</div>
       </div>
 
-      <div class="cv-tabs" id="cvTabs"><button data-t="western" class="on">Birth chart</button><button data-t="saju">Saju</button><button data-t="map">Where on Earth</button></div>
+      <div class="tabs2" id="cvTabs"><button data-t="western" class="on">Birth chart</button><button data-t="saju">Saju</button><button data-t="map">Where on Earth</button></div>
 
       <div class="panel cv-pane" data-t="western">
         <h2>Birth chart</h2>
@@ -103,39 +103,40 @@ const ChartView = (() => {
       </div>
 
       <div class="panel cv-pane hidden" data-t="saju">
-        <h2>Saju · Four Pillars</h2>
+        <h2>Saju: your four pillars</h2>
         <div class="cv-pillars">${s.pillars.map(p => `<div class="cv-pillar ${p.pillar === 'Day' ? 'me' : ''}">
-          <small>${p.pillar}${p.pillar === 'Day' ? ' · you' : ''}</small><div class="hz">${p.hanja}</div>
-          <div class="el" style="color:${ELEMENT_COLORS[p.stemElement]}">${p.polarity} ${p.stemElement}</div><div class="el" style="color:${ELEMENT_COLORS[p.branchElement]}">${p.animal} · ${p.branchElement}</div>
+          <small>${p.pillar}${p.pillar === 'Day' ? ' (you)' : ''}</small><div class="hz">${p.hanja}</div>
+          <div class="el" style="color:${ELEMENT_COLORS[p.stemElement]}">${p.polarity} ${p.stemElement}</div><div class="el" style="color:${ELEMENT_COLORS[p.branchElement]}">${p.animal}, ${p.branchElement}</div>
           <p>${PILLAR[p.pillar]}</p></div>`).join('')}</div>
-        <div class="cv-dm"><b>Day Master: ${dmKey} (${dm.stem})</b><p>Your core self is like ${DAY_MASTER[dmKey]}</p></div>
+        <div class="cv-dm"><b>Day master: ${dmKey} (${dm.stem})</b><p>Your core self is like ${DAY_MASTER[dmKey]}</p></div>
         <div class="grid2" style="margin-top:14px">
           <div><h3>Element balance</h3>${Object.entries(bal).map(([k, v]) => `<div class="bar"><span>${k}</span><i style="width:${Math.max(v / max * 70, 2)}%;background:${ELEMENT_COLORS[k]}"></i><span>${v}</span></div>`).join('')}
             <p class="note" style="margin-top:8px">${strong.length ? `Strong: ${strong.map(k => `${k} (${ELEMENT[k]})`).join(', ')}. ` : ''}${missing.length ? `Missing: ${missing.map(k => `${k} (${ELEMENT[k]})`).join(', ')}, often something you seek in people and places.` : 'Every element is present.'}</p></div>
-          <div><h3>This year: ${yp.hanja} ${yp.polarity} ${yp.stemElement} ${yp.animal}</h3><p style="margin:4px 0"><b style="color:var(--gold)">${relTitle}</b></p><p class="note" style="font-size:14px">${relText}</p></div>
+          <div><h3>This year: ${yp.hanja} ${yp.polarity} ${yp.stemElement} ${yp.animal}</h3><p style="margin:4px 0"><b style="color:var(--blue)">${relTitle}</b></p><p class="note" style="font-size:14px">${relText}</p></div>
         </div>
       </div>
 
       <div class="panel cv-pane hidden" data-t="map">
         <h2>Where on Earth</h2>
-        <p class="note" style="margin-top:-6px">Lines show where each planet was rising, setting, overhead or underfoot when you were born. Pink Venus lines are where you tend to look and feel your best.</p>
-        <svg id="chartMap" viewBox="0 0 1000 500" class="cv-map"></svg>
-        <div class="legend">${Object.keys(COLORS).map(p => `<span><span class="sw" style="background:${COLORS[p]}"></span>${p}</span>`).join('')}<span>solid = ASC / MC · dashed = DSC · dotted = IC</span></div>
-        <label style="margin-top:14px">Check a city</label><input id="cvCityQ" placeholder="e.g. London" autocomplete="off"><div class="results" id="cvCityResults"></div>
+        <p class="sub">Lines show where each planet was rising, setting, overhead or underfoot when you were born. The thicker pink Venus lines are where you tend to look and feel your best.</p>
+        <svg id="chartMap" viewBox="0 0 1000 500" class="map"></svg>
+        <div class="legend">${Object.keys(COLORS).map(p => `<span><span class="sw" style="background:${COLORS[p]}"></span>${p}</span>`).join('')}<span>Solid: rising or overhead. Dashed: setting. Dotted: underfoot.</span></div>
+        <label for="cvCityQ" style="margin-top:16px">Check a city</label><input id="cvCityQ" placeholder="e.g. London" autocomplete="off"><div class="results" id="cvCityResults"></div>
         <div id="cvCities"></div>
       </div>
 
       <div class="panel cv-chat" id="cvChat">
         <h2>Ask about your chart</h2>
-        <div id="cvLog" class="cv-log"><div class="msg bot">Ask me anything about your chart, your saju or your map. I'll answer from your actual placements.</div></div>
+        <div id="cvLog" class="log"><div class="msg bot">Ask me anything about your chart, your saju or your map. I'll answer from your actual placements.</div></div>
         <div class="chips" id="cvStarters">${STARTERS.map(q => `<button class="chip cv-starter">${esc(q)}</button>`).join('')}</div>
-        <div class="rf-row"><input id="cvInput" placeholder="Type your question…" maxlength="500"><button id="cvSend">Ask</button></div>
+        <div class="row"><input id="cvInput" placeholder="Type your question" maxlength="500" aria-label="Your question"><button class="btn" id="cvSend">Ask</button></div>
       </div>
-      <div class="panel cv-cta"><div><b>Facing a decision?</b><p class="note" style="margin:2px 0 0">Bring it here. Saju for when, your map for where, tarot for now.</p></div><button id="cvToDecide" style="width:auto;padding:10px 20px">Start a decision →</button></div>`;
+      <div class="panel" style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap"><div><h3>Facing a decision?</h3><p class="note" style="margin:0">Saju for when, your map for where, tarot for now.</p></div><div class="btnrow" style="margin:0"><button class="ghost" id="cvToCards">Pull cards</button><button class="btn" id="cvToDecide">Start a decision</button></div></div>`;
 
     $('cvTabs').querySelectorAll('button').forEach(b => b.onclick = () => tab(b.dataset.t));
     $('cvToChat').onclick = () => { $('cvChat').scrollIntoView({ behavior: 'smooth' }); $('cvInput').focus(); };
     $('cvToDecide').onclick = () => view('decide');
+    $('cvToCards').onclick = () => view('cards');
     attachSearch('cvCityQ', 'cvCityResults', (p, input) => { places.unshift(p); input.value = ''; renderCities(); });
     $('cvSend').onclick = send;
     $('cvInput').onkeydown = e => { if (e.key === 'Enter') send(); };
@@ -154,10 +155,10 @@ const ChartView = (() => {
     $('cvCities').innerHTML = places.map((p, i) => {
       const near = AstroEngine.linesNearCity(state.chart, p.lat, p.lon, 700);
       const venus = near.some(n => n.planet === 'Venus');
-      return `<div class="city"><h3>${esc(p.label)}${i === places.length - 1 && p === state.birthPlace ? ' <span class="note">(birthplace)</span>' : ''}</h3>` +
-        (near.length ? near.map(n => `<span class="tag ${n.planet === 'Venus' ? 'venus' : ''}"><b style="color:${COLORS[n.planet]}">${n.planet} ${n.angle}</b> · ${n.km} km</span>`).join('') +
-          `<div class="note" style="margin-top:6px">${near.slice(0, 3).map(n => `${n.planet} ${n.angle}: ${PLANET[n.planet]} ${ANGLE[n.angle]}`).join(' · ')}</div>` +
-          (venus ? '<div class="note" style="color:var(--pink);margin-top:4px">✦ Venus line nearby: a "where you look your best" place.</div>' : '')
+      return `<div class="city"><h3>${esc(p.label)}${i === places.length - 1 && p === state.birthPlace ? ' <span class="note">(where you were born)</span>' : ''}</h3>` +
+        (near.length ? near.map(n => `<span class="tag ${n.planet === 'Venus' ? 'venus' : ''}"><b style="color:${COLORS[n.planet]}">${n.planet} ${n.angle}</b>, ${n.km} km away</span>`).join('') +
+          `<div class="note" style="margin-top:6px">${near.slice(0, 3).map(n => `${n.planet} ${n.angle}: ${PLANET[n.planet]} ${ANGLE[n.angle]}.`).join(' ')}</div>` +
+          (venus ? '<div class="note" style="color:var(--rose);margin-top:4px">Venus line nearby: one of the places where you look your best.</div>' : '')
           : '<span class="note">No planet lines within 700 km: a neutral, blank-page place for you.</span>') + '</div>';
     }).join('');
     if (!$('chartMap').closest('.cv-pane').classList.contains('hidden')) renderMap('chartMap', places);
